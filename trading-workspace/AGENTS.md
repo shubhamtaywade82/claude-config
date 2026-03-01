@@ -6,10 +6,10 @@ This workspace contains all trading infrastructure — split across two distinct
 
 ## ⚠️ Critical API Boundary
 
-| Domain | Exchange | Broker API | Repos |
+| Domain | Exchange | Broker API | Active repos |
 |---|---|---|---|
-| Indian Markets (NSE/BSE) | NSE, BSE | **DhanHQ v2 API only** | `dhanhq-*`, `algo_*`, `dhan_*`, `market-data-service`, `swing_long_trader` |
-| Crypto | Delta Exchange India | **Delta Exchange API only** | `crypto-bot`, `crypto_bot_api` |
+| Indian Markets (NSE/BSE) | NSE, BSE | **DhanHQ v2 API only** | `dhanhq-client`, `dhanhq-mcp`, `algo_trading_api`, `algo_scalper_api`, `dhan_trader_bot`, `market-data-service`, `swing_long_trader`, `vyapari` |
+| Crypto | Delta Exchange India | **Delta Exchange API only** | `crypto_bot_api` (+ `ares` in ai-workspace) |
 
 **NEVER cross these boundaries:**
 - Indian market repos must NOT reference Delta Exchange APIs
@@ -25,40 +25,45 @@ Risk models and utility logic may be shared only if they are **fully broker-agno
 
 ---
 
-## Repos
+## Active Repos
 
 ### Indian Markets — DhanHQ v2
 
 | Repo | Role |
 |---|---|
-| `dhanhq-client` | Broker SDK — DhanHQ v2 API wrapper |
-| `dhanhq` | Core DhanHQ integration |
-| `dhanhq-mcp` | DhanHQ MCP server |
-| `dhan_mcp_server` | DhanHQ v2 MCP server — read-only broker data (portfolio, orders, market data) |
-| `algo_trading_api` | Primary strategy engine (NSE/BSE) |
-| `algo_scalper_api` | Low-latency execution engine (NSE/BSE) |
-| `algo_trader_bot` | Automated trading bot (NSE/BSE) |
-| `dhan_live_feed_ruby` | Real-time NSE/BSE market data feed |
-| `dhan_scalper` | Scalper strategy layer (NSE/BSE) |
-| `dhan_trader` | Core trader logic (NSE/BSE) |
-| `dhan_trader_bot` | Trader bot runtime (NSE/BSE) |
-| `market-data-service` | Market data aggregation (NSE/BSE) |
-| `swing_long_trader` | Swing/long position strategies (NSE/BSE) |
-| `vyapari` | AI-powered options trading agent — Ollama LLM + DhanHQ (NSE/BSE) |
+| `dhanhq-client` | **Canonical DhanHQ v2 gem** — all repos use this |
+| `dhanhq-mcp` | MCP server with order execution tools (Ruby gem, HTTP + stdio) |
+| `dhan_mcp_server` | MCP server, read-only (Python, Claude Desktop) |
+| `algo_trading_api` | **Primary signal/webhook API** — TradingView alerts, options signals, swing picks |
+| `algo_scalper_api` | **Primary live scalper** — WebSocket feed, SMC entry engine, risk, exit engine |
+| `dhan_trader_bot` | Strategy pattern bot (gem/CLI, Strategy/Factory/Observer/Builder) |
+| `market-data-service` | Read-only market data aggregation (Python FastAPI) |
+| `swing_long_trader` | Swing/long-term equity system with SMC, backtesting, Telegram |
+| `vyapari` | AI options trading agent — Ollama LLM + DhanHQ |
 
 ### Crypto — Delta Exchange India
 
 | Repo | Role |
 |---|---|
-| `crypto-bot` | Crypto trading bot (Delta Exchange India) |
-| `crypto_bot_api` | Crypto API layer (Delta Exchange India) |
+| `crypto_bot_api` | Rails API layer for crypto trading |
+| `ares` _(ai-workspace)_ | **Primary live crypto scalper** — TypeScript, WebSocket-first |
 
 ### Cross-Domain (intentional exceptions)
 
-| Repo | Role | Note |
-|---|---|---|
-| `trading_playground` | Strategy research scripts — NIFTY/SENSEX options (PCR Trend Reversal) | **May reference both DhanHQ and Delta Exchange APIs** — cross-broker comparison is intentional here |
-| `pinescript-agents` | Pine Script / TradingView indicator development assistant | **May reference both APIs** — broker-agnostic strategy authoring tool |
+| Repo | Note |
+|---|---|
+| `trading_playground` | PCR Trend Reversal research — both APIs by design |
+| `pinescript-agents` | Pine Script authoring — broker-agnostic |
+
+### Deprecated (archived — do not modify)
+
+| Repo | Replaced by |
+|---|---|
+| `dhanhq` | `dhanhq-client` |
+| `algo_trader_bot` | `algo_scalper_api` |
+| `dhan_scalper` | `algo_scalper_api` |
+| `dhan_trader` | `algo_trading_api` |
+| `crypto-bot` | `ares` |
 
 ---
 
@@ -71,12 +76,12 @@ Risk models and utility logic may be shared only if they are **fully broker-agno
 - WebSocket feeds must not drop events under normal network conditions
 
 ### Indian Markets (DhanHQ)
-- No breaking changes to `dhanhq-client` public API without version bump
 - All broker calls go through `dhanhq-client` — no raw HTTP to DhanHQ elsewhere
+- No breaking changes to `dhanhq-client` public API without version bump
 
 ### Crypto (Delta Exchange)
-- All broker calls go through `crypto_bot_api` — no raw HTTP to Delta Exchange in `crypto-bot`
-- Delta Exchange API credentials must never appear in Indian market repos and vice versa
+- All broker calls for crypto go through `ares` (execution) or `crypto_bot_api` (API layer)
+- Delta Exchange credentials must never appear in Indian market repos
 
 ---
 
@@ -84,7 +89,6 @@ Risk models and utility logic may be shared only if they are **fully broker-agno
 
 - Service objects own all trading logic — no business logic in controllers
 - Event-driven exit management — positions close via signals, not polling
-- Strategy DSL must remain broker-agnostic where possible
 - No coupling between feed processing and order execution layers
 
 ---
@@ -93,29 +97,32 @@ Risk models and utility logic may be shared only if they are **fully broker-agno
 
 ### Indian Markets
 ```
-dhan_live_feed_ruby  →  algo_trading_api  →  algo_scalper_api
-dhanhq-client        →  algo_trading_api
-dhanhq-client        →  dhan_scalper
-dhanhq-client        →  dhan_trader / dhan_trader_bot
+dhanhq-client  →  algo_trading_api
+dhanhq-client  →  algo_scalper_api
+dhanhq-client  →  dhanhq-mcp
+dhanhq-client  →  dhan_mcp_server (Python SDK)
+dhanhq-client  →  dhan_trader_bot
+dhanhq-client  →  swing_long_trader
+dhanhq-client  →  vyapari
 ```
 
 ### Crypto
 ```
-crypto_bot_api  →  crypto-bot
+ares (ai-workspace)  →  Delta Exchange WebSocket + REST (direct)
+crypto_bot_api       →  Delta Exchange REST (direct)
 ```
 
 ### Cross-domain (intentional)
 ```
-trading_playground  →  dhanhq-client + crypto_bot_api  (both, by design)
-pinescript-agents   →  dhanhq-client + crypto_bot_api  (both, by design)
+trading_playground  →  dhanhq-client + Delta Exchange  (both, by design)
 ```
 
 ---
 
 ## Running Context
 
-- Primary languages: Ruby, Node.js
-- Framework: Rails (API mode), Express/Node (crypto-bot)
-- Testing: RSpec (Ruby), Jest/Mocha (Node)
+- Primary languages: Ruby (Indian markets), TypeScript (crypto)
+- Framework: Rails 8 API mode (Indian), pure TypeScript (crypto)
+- Testing: RSpec (Ruby), Jest (TypeScript)
 - Indian Markets Broker: DhanHQ v2
 - Crypto Broker: Delta Exchange India
