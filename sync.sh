@@ -25,16 +25,17 @@ echo ""
 # ─── Global skills ────────────────────────────
 
 echo "═══ Syncing global skills"
-mkdir -p "$SCRIPT_DIR/global-skills/solid-references"
+mkdir -p "$SCRIPT_DIR/global-skills"
 
-for file in "$GLOBAL_SKILLS_DIR"/*.md; do
-  [ -f "$file" ] && cp "$file" "$SCRIPT_DIR/global-skills/$(basename "$file")" && log "global: $(basename "$file")"
+# Sync skill directories (new format: each skill is a directory with SKILL.md)
+for dir in "$GLOBAL_SKILLS_DIR"/*/; do
+  [ -d "$dir" ] || continue
+  name="$(basename "$dir")"
+  dst="$SCRIPT_DIR/global-skills/$name"
+  rm -rf "$dst"
+  cp -r "$dir" "$dst"
+  log "global: $name/"
 done
-
-if [ -d "$GLOBAL_SKILLS_DIR/solid-references" ]; then
-  cp -r "$GLOBAL_SKILLS_DIR/solid-references/." "$SCRIPT_DIR/global-skills/solid-references/"
-  log "global: solid-references/"
-fi
 
 # ─── Workspace skills + AGENTS.md ─────────────
 
@@ -56,10 +57,15 @@ for workspace in trading-workspace ai-workspace; do
     log "$workspace: AGENTS.md"
   fi
 
-  # .claude/skills/
+  # .claude/skills/ — sync skill directories
   if [ -d "$src/.claude/skills" ]; then
-    for file in "$src/.claude/skills"/*.md; do
-      [ -f "$file" ] && cp "$file" "$SCRIPT_DIR/$workspace/skills/$(basename "$file")" && log "$workspace: $(basename "$file")"
+    for dir in "$src/.claude/skills"/*/; do
+      [ -d "$dir" ] || continue
+      name="$(basename "$dir")"
+      dst="$SCRIPT_DIR/$workspace/skills/$name"
+      rm -rf "$dst"
+      cp -r "$dir" "$dst"
+      log "$workspace: $name/"
     done
   fi
 done

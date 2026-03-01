@@ -38,6 +38,21 @@ log()     { echo -e "${GREEN}✓${NC} $1"; }
 info()    { echo -e "${CYAN}→${NC} $1"; }
 warn()    { echo -e "${YELLOW}⚠${NC} $1"; }
 
+copy_skill_dir() {
+  local src="$1" dst_parent="$2"
+  local name
+  name="$(basename "$src")"
+  local dst="$dst_parent/$name"
+  if $DRY_RUN; then
+    info "[DRY RUN] cp -r $src/ → $dst/"
+  else
+    mkdir -p "$dst_parent"
+    rm -rf "$dst"
+    cp -r "$src" "$dst"
+    log "$name/ → $dst/"
+  fi
+}
+
 copy_file() {
   local src="$1" dst="$2"
   if $DRY_RUN; then
@@ -46,17 +61,6 @@ copy_file() {
     mkdir -p "$(dirname "$dst")"
     cp "$src" "$dst"
     log "$(basename "$src") → $dst"
-  fi
-}
-
-copy_dir() {
-  local src="$1" dst="$2"
-  if $DRY_RUN; then
-    info "[DRY RUN] cp -r $src/ → $dst/"
-  else
-    mkdir -p "$dst"
-    cp -r "$src/." "$dst/"
-    log "$(basename "$src")/ → $dst/"
   fi
 }
 
@@ -72,13 +76,10 @@ install_global_skills() {
     mkdir -p "$GLOBAL_SKILLS_DIR"
   fi
 
-  for file in "$SCRIPT_DIR/global-skills"/*.md; do
-    [ -f "$file" ] && copy_file "$file" "$GLOBAL_SKILLS_DIR/$(basename "$file")"
+  # Each skill is a directory with SKILL.md inside
+  for dir in "$SCRIPT_DIR/global-skills"/*/; do
+    [ -d "$dir" ] && copy_skill_dir "$dir" "$GLOBAL_SKILLS_DIR"
   done
-
-  if [ -d "$SCRIPT_DIR/global-skills/solid-references" ]; then
-    copy_dir "$SCRIPT_DIR/global-skills/solid-references" "$GLOBAL_SKILLS_DIR/solid-references"
-  fi
 }
 
 # ─── Workspace Skills + AGENTS.md ─────────────
@@ -102,17 +103,17 @@ install_workspace() {
     copy_file "$agents_src" "$workspace_path/AGENTS.md"
   fi
 
-  # .claude/skills/
+  # .claude/skills/ — each skill is a directory
   local skills_src="$SCRIPT_DIR/$name/skills"
+  local skills_dst="$workspace_path/.claude/skills"
   if [ -d "$skills_src" ]; then
-    local skills_dst="$workspace_path/.claude/skills"
     if $DRY_RUN; then
       info "[DRY RUN] mkdir -p $skills_dst"
     else
       mkdir -p "$skills_dst"
     fi
-    for file in "$skills_src"/*.md; do
-      [ -f "$file" ] && copy_file "$file" "$skills_dst/$(basename "$file")"
+    for dir in "$skills_src"/*/; do
+      [ -d "$dir" ] && copy_skill_dir "$dir" "$skills_dst"
     done
   fi
 }
@@ -142,5 +143,7 @@ else
   echo "Done. Restart Claude TUI to load new skills."
   echo ""
   echo "Global skills available in any session:"
-  ls "$GLOBAL_SKILLS_DIR"/*.md 2>/dev/null | xargs -I{} basename {} .md | sed 's/^/  \//'
+  for dir in "$GLOBAL_SKILLS_DIR"/*/; do
+    [ -d "$dir" ] && echo "  /$(basename "$dir")"
+  done
 fi

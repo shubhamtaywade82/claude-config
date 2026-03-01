@@ -4,37 +4,39 @@ Portable Claude TUI skills, workspace AGENTS.md files, and setup scripts.
 
 ## Structure
 
+Skills use the [Agent Skills](https://agentskills.io) directory format — each skill is a directory
+containing a `SKILL.md` entrypoint plus optional supporting files loaded on demand.
+
 ```
 claude-config/
 ├── install.sh                    ← run on a new machine to set everything up
 ├── sync.sh                       ← run before committing to pull latest from machine
 │
 ├── global-skills/                ← copied to ~/.claude/skills/
-│   ├── code-review.md
-│   ├── rails-best-practices.md
-│   ├── rails-style.md
-│   ├── rspec.md
-│   ├── ruby-design-patterns.md
-│   ├── ruby-style.md
-│   ├── solid.md
-│   ├── solid-ruby.md
-│   └── solid-references/
+│   ├── code-review/              ← SKILL.md + project-pattern-detection.md
+│   ├── rails-best-practices/     ← SKILL.md + controllers-models.md + active-record.md + security-timeouts.md
+│   ├── rails-style/              ← SKILL.md
+│   ├── rspec/                    ← SKILL.md
+│   ├── ruby-design-patterns/     ← SKILL.md + creational-patterns.md + structural-patterns.md + behavioral-patterns.md
+│   ├── ruby-style/               ← SKILL.md
+│   ├── solid/                    ← SKILL.md + references/ (9 files)
+│   └── solid-ruby/               ← SKILL.md + references/ (9 files)
 │
 ├── trading-workspace/            ← copied to ~/project/trading-workspace/
 │   ├── AGENTS.md
 │   └── skills/                  ← copied to .claude/skills/
-│       ├── rails-trading-refactor.md
-│       ├── rspec-generator.md
-│       ├── dhan-api-invariant-check.md
-│       ├── delta-api-invariant-check.md
-│       └── intraday-*.md (7 skills)
+│       ├── rails-trading-refactor/
+│       ├── rspec-generator/
+│       ├── dhan-api-invariant-check/
+│       ├── delta-api-invariant-check/
+│       └── intraday-*/ (7 skills)
 │
 └── ai-workspace/                 ← copied to ~/project/ai-workspace/
     ├── AGENTS.md
     └── skills/
-        ├── tool-calling-validator.md
-        ├── prompt-evaluator.md
-        └── runtime-architecture-check.md
+        ├── tool-calling-validator/
+        ├── prompt-evaluator/
+        └── runtime-architecture-check/
 ```
 
 ## New Machine Setup
