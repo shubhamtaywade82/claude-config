@@ -29,7 +29,10 @@ claude-config/
 │       ├── rspec-generator/
 │       ├── dhan-api-invariant-check/
 │       ├── delta-api-invariant-check/
-│       └── intraday-*/ (7 skills)
+│       ├── intraday-pipeline/
+│       ├── intraday-*/ (7 skills)
+│       ├── crypto-risk-sizing/
+│       └── crypto-execution-safety/
 │
 └── ai-workspace/                 ← copied to ~/project/ai-workspace/
     ├── AGENTS.md
@@ -103,6 +106,9 @@ git push
 | `intraday-execution-safety` | Safe order placement |
 | `intraday-exit-management` | SL, trailing, time exits |
 | `intraday-post-trade-intel` | Kill switches, drawdown tracking |
+| `intraday-pipeline` | Full 7-step pipeline orchestrator (regime → post-trade) |
+| `crypto-risk-sizing` | Position sizing for Delta Exchange futures |
+| `crypto-execution-safety` | Safe execution for Delta Exchange crypto futures |
 
 ### AI Workspace
 
