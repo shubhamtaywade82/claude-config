@@ -1,0 +1,52 @@
+mode: safe_cleanup
+
+confidence_threshold:
+  apply: HIGH
+  report: MEDIUM
+  ignore: LOW
+
+checks:
+  ruby:
+    - rspec
+    - rubocop
+  javascript:
+    - jest
+    - eslint
+    - tsc
+  dead_code:
+    - knip
+  dependencies:
+    - madge
+  boot:
+    - runtime_boot
+
+rules:
+  no_silent_fallbacks: true
+  no_behavior_change: true
+  require_reference_trace: true
+  no_speculative_refactor: true
+  trading_paths_require_confirmation: true
+
+ignore:
+  - vendor/
+  - node_modules/
+  - tmp/
+  - .git/
+  - log/
+  - coverage/
+  - public/assets/
+  - db/schema.rb
+
+trading_critical_paths:
+  - app/services/order*
+  - app/services/risk*
+  - app/services/execution*
+  - app/workers/kill_switch*
+  - app/workers/drawdown*
+  - app/channels/market_feed*
+  - app/channels/order_feed*
+
+patch_mode:
+  enabled: false
+  output_dir: patches/
+  branch_prefix: cleanup/step-
