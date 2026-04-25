@@ -19,6 +19,7 @@ claude-config/
 │   ├── rspec/                    ← SKILL.md
 │   ├── ruby-design-patterns/     ← SKILL.md + creational-patterns.md + structural-patterns.md + behavioral-patterns.md
 │   ├── ruby-style/               ← SKILL.md
+│   ├── safe-codebase-cleanup/    ← SKILL.md + 7 runners + checks + scripts + CI gate
 │   ├── solid/                    ← SKILL.md + references/ (9 files)
 │   └── solid-ruby/               ← SKILL.md + references/ (9 files)
 │
@@ -88,6 +89,7 @@ git push
 | `rspec` | `/rspec` | RSpec Style Guide + Better Specs |
 | `ruby-design-patterns` | `/ruby-design-patterns` | All 23 GoF patterns with Ruby examples |
 | `ruby-style` | `/ruby-style` | Ruby Style Guide conventions |
+| `safe-codebase-cleanup` | `/safe-codebase-cleanup` | 7-pass safe cleanup — dedup, types, dead code, circular deps, type strengthening, error handling, AI artifacts. HIGH-confidence only. Rails-aware + trading guardrails + CI gate |
 | `solid` | `/solid` | SOLID principles (TypeScript/general) |
 | `solid-ruby` | `/solid-ruby` | SOLID + TDD + clean code (Ruby) |
 

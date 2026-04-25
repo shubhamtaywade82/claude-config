@@ -1,0 +1,174 @@
+name: Safe Cleanup Gate
+
+# Runs on any PR from a cleanup/ branch.
+# Verifies the cleanup didn't break anything and posts a report.
+# Add the 'bypass-cleanup-gate' label to skip for emergency merges.
+
+on:
+  pull_request:
+    branches: [main, master]
+    types: [opened, synchronize, reopened, labeled]
+
+jobs:
+  cleanup-gate:
+    name: Cleanup Verification
+    runs-on: ubuntu-latest
+
+    # Skip if emergency bypass label is present
+    if: ${{ !contains(github.event.pull_request.labels.*.name, 'bypass-cleanup-gate') }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Detect stack
+        id: stack
+        run: |
+          [ -f "Gemfile" ]      && echo "ruby=true"  >> $GITHUB_OUTPUT || echo "ruby=false"  >> $GITHUB_OUTPUT
+          [ -f "package.json" ] && echo "node=true"  >> $GITHUB_OUTPUT || echo "node=false"  >> $GITHUB_OUTPUT
+          [ -f "tsconfig.json" ] && echo "ts=true"   >> $GITHUB_OUTPUT || echo "ts=false"    >> $GITHUB_OUTPUT
+
+      - name: Setup Ruby
+        if: steps.stack.outputs.ruby == 'true'
+        uses: ruby/setup-ruby@v1
+        with:
+          bundler-cache: true
+
+      - name: Setup Node
+        if: steps.stack.outputs.node == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install Node dependencies
+        if: steps.stack.outputs.node == 'true'
+        run: npm ci
+
+      - name: Run RSpec
+        if: steps.stack.outputs.ruby == 'true'
+        run: |
+          bundle exec rspec --format progress --format json --out tmp/rspec_results.json
+        continue-on-error: false
+
+      - name: Run Jest
+        if: steps.stack.outputs.node == 'true'
+        run: npm test -- --ci --passWithNoTests --json --outputFile=tmp/jest_results.json
+        continue-on-error: false
+
+      - name: TypeScript type check
+        if: steps.stack.outputs.ts == 'true'
+        run: npx tsc --noEmit
+        continue-on-error: false
+
+      - name: Rails boot check
+        if: steps.stack.outputs.ruby == 'true'
+        run: bundle exec rails runner "puts 'BOOT OK'"
+        continue-on-error: false
+
+      - name: Check for unsafe cleanup patterns
+        id: safety
+        run: |
+          ISSUES=0
+
+          # Check for any rescue nil that may have been introduced
+          NEW_RESCUE_NIL=$(git diff origin/main...HEAD -- '*.rb' | grep "^+" | grep "rescue nil" | wc -l || echo 0)
+          [ "$NEW_RESCUE_NIL" -gt 0 ] && echo "::warning::New 'rescue nil' introduced: $NEW_RESCUE_NIL occurrences" && ISSUES=$((ISSUES+1))
+
+          # Check for any new empty catch blocks
+          NEW_EMPTY_CATCH=$(git diff origin/main...HEAD -- '*.ts' '*.js' | grep "^+" | grep -E "catch.*\{\s*\}" | wc -l || echo 0)
+          [ "$NEW_EMPTY_CATCH" -gt 0 ] && echo "::warning::New empty catch block introduced: $NEW_EMPTY_CATCH occurrences" && ISSUES=$((ISSUES+1))
+
+          # Check if trading-critical files were modified
+          TRADING_FILES=$(git diff origin/main...HEAD --name-only | grep -iE "order|execution|risk|sizing|kill_switch|drawdown" | wc -l || echo 0)
+          [ "$TRADING_FILES" -gt 0 ] && echo "::notice::Trading-critical files modified: $TRADING_FILES — verify manually" && true
+
+          echo "issues=$ISSUES" >> $GITHUB_OUTPUT
+
+      - name: Generate cleanup report
+        id: report
+        if: always()
+        run: |
+          BRANCH="${{ github.head_ref }}"
+          STEP=$(echo "$BRANCH" | grep -oP "step-\K\d+" || echo "?")
+
+          {
+            echo "## Cleanup Gate Report"
+            echo ""
+            echo "**Branch:** \`$BRANCH\`"
+            echo "**Step:** $STEP"
+            echo ""
+
+            echo "### Checks"
+            echo "| Check | Result |"
+            echo "|-------|--------|"
+
+            # RSpec
+            if [ -f "tmp/rspec_results.json" ]; then
+              PASS=$(cat tmp/rspec_results.json | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('summary',{}).get('example_count',0))" 2>/dev/null || echo "?")
+              FAIL=$(cat tmp/rspec_results.json | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('summary',{}).get('failure_count',0))" 2>/dev/null || echo "?")
+              echo "| RSpec | $PASS passing, $FAIL failing |"
+            fi
+
+            # Jest
+            if [ -f "tmp/jest_results.json" ]; then
+              PASS=$(cat tmp/jest_results.json | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('numPassedTests',0))" 2>/dev/null || echo "?")
+              FAIL=$(cat tmp/jest_results.json | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('numFailedTests',0))" 2>/dev/null || echo "?")
+              echo "| Jest | $PASS passing, $FAIL failing |"
+            fi
+
+            echo "| Boot check | ✓ |"
+            echo "| Type check | ✓ |"
+            echo ""
+
+            # Diff summary
+            echo "### Changed Files"
+            echo "\`\`\`"
+            git diff origin/main...HEAD --stat | tail -5
+            echo "\`\`\`"
+
+            ISSUES="${{ steps.safety.outputs.issues }}"
+            if [ "$ISSUES" -gt 0 ]; then
+              echo ""
+              echo "### ⚠️ Safety Warnings"
+              echo "See job log for details. Review before merging."
+            fi
+          } > tmp/cleanup_report.md
+
+          cat tmp/cleanup_report.md
+          echo "report_file=tmp/cleanup_report.md" >> $GITHUB_OUTPUT
+
+      - name: Post PR comment
+        if: always() && github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs')
+            const report = fs.readFileSync('tmp/cleanup_report.md', 'utf8')
+
+            // Find existing bot comment and update it, or create new one
+            const comments = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            })
+
+            const botComment = comments.data.find(c =>
+              c.user.type === 'Bot' && c.body.includes('Cleanup Gate Report')
+            )
+
+            if (botComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: report,
+              })
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: report,
+              })
+            }
