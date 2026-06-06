@@ -51,21 +51,26 @@ Work on `$ARGUMENTS` (default: current working directory or diff).
 
 ---
 
-## How to Trigger This Skill
+## How to Use This Skill
 
-Provide one of these inputs:
+See [references/how-to-use.md](references/how-to-use.md) for the full guide — common prompts,
+how to read the smell report, approval workflow, and before/after examples for each stack.
+
+**Quick start:** paste your code and say `"Deslop this"`. Tell the skill the stack (Rails / React /
+Django) and whether you have tests. It handles the rest.
+
+---
+
+## Inputs
 
 | Input | What to Send |
 |---|---|
-| Full repo | Paste the file tree + key files you're suspicious of |
-| PR diff | Paste the `git diff` of the AI-generated changes |
-| Single file | Paste the file content directly |
-| Tool output | Paste RuboCop/Reek/ESLint/Ruff JSON + the files they flag |
+| Single file | Paste the file content |
+| PR diff | Paste `git diff main...HEAD` |
+| File tree + files | Directory listing + suspicious files |
+| Tool output + files | RuboCop/Reek/ESLint/Ruff JSON + the flagged files |
 
-Say **"Deslop this"** or **"Clean up this AI-generated code"** and specify:
-1. The file(s) or diff
-2. The stack (Rails / React / Django / etc.)
-3. Whether tests exist (yes / no / partial)
+Also specify: **stack** (Rails / React / Django) and **tests** (yes / partial / none).
 
 ---
 
@@ -453,3 +458,4 @@ For each approved target:
 | [references/yard-documentation.md](references/yard-documentation.md) | YARD tag reference, when to add/remove/update docs, good vs. bad YARD examples |
 | [references/safety-checklist.md](references/safety-checklist.md) | Pre-refactor safety gates, risk matrix, YARD safety rules, post-refactor verification |
 | [references/tool-integration.md](references/tool-integration.md) | Full Phase 1 pipelines for Ruby/Rails, JS/TS, Python; Phase 2 safety verification |
+| [references/how-to-use.md](references/how-to-use.md) | User guide: common prompts, reading smell reports, approval workflow, before/after examples |
