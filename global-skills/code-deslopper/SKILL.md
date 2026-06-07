@@ -273,6 +273,10 @@ Flag (risk 3):
 - Missing `dependent:` on `has_many`/`has_one`
 - Query interpolation (risk 5 — SQL injection)
 
+### H. Logging & Configuration (Cross-Stack)
+
+See [references/logging-config-patterns.md](references/logging-config-patterns.md) for logging/observability and configuration-management anti-patterns shared across Ruby, Python, and JS/TS (e.g. `puts`/`print`/`console.log` debugging left in, secrets hardcoded instead of env-loaded, log levels misused, structured vs. string-interpolated logging).
+
 ---
 
 ## Must Keep (Never Remove Without Explicit Approval)
@@ -306,6 +310,8 @@ Flag (risk 3):
 ### Ruby / Rails
 
 See [references/ruby-rails-patterns.md](references/ruby-rails-patterns.md) for detailed examples.
+See [references/rails-advanced-patterns.md](references/rails-advanced-patterns.md) for form objects, query objects, presenters, serializers, Sidekiq jobs, and Pundit/CanCan policies.
+See [references/rspec-patterns.md](references/rspec-patterns.md) for RSpec/FactoryBot anti-patterns when refactoring touches specs.
 
 **Service Objects:**
 - Collapse trivial single-method services into model methods or controller flow.
@@ -345,6 +351,9 @@ See [references/ruby-rails-patterns.md](references/ruby-rails-patterns.md) for d
 ### JavaScript / TypeScript / React
 
 See [references/js-ts-patterns.md](references/js-ts-patterns.md) for detailed examples.
+See [references/nextjs-patterns.md](references/nextjs-patterns.md) for Next.js App Router-specific anti-patterns (server/client component misuse, caching, data fetching).
+See [references/nodejs-express-patterns.md](references/nodejs-express-patterns.md) for Node.js/Express backend anti-patterns and middleware ordering.
+See [references/jest-vitest-patterns.md](references/jest-vitest-patterns.md) for Jest/Vitest/RTL testing anti-patterns when refactoring touches tests.
 
 - Replace one-method manager classes with plain async functions.
 - Remove wrapper classes that add no state.
@@ -359,6 +368,7 @@ See [references/js-ts-patterns.md](references/js-ts-patterns.md) for detailed ex
 ### Python / Django / FastAPI
 
 See [references/python-patterns.md](references/python-patterns.md) for detailed examples.
+See [references/python-advanced-patterns.md](references/python-advanced-patterns.md) for SQLAlchemy, Flask, FastAPI dependency injection, Celery tasks, and Pytest patterns.
 
 - Collapse trivial `@dataclass` (fields only) to `TypedDict` or plain dict.
 - Delete fake ABCs with one concrete subclass and no polymorphism.
@@ -452,10 +462,17 @@ For each approved target:
 | [references/ruby-rails-patterns.md](references/ruby-rails-patterns.md) | 39 Rails/Ruby anti-patterns: services, controllers, models, AR queries, migrations, security, timeouts |
 | [references/ruby-style-guide.md](references/ruby-style-guide.md) | Ruby Style Guide rules + RuboCop checks + YARD documentation rules |
 | [references/rails-style-guide.md](references/rails-style-guide.md) | Rails Style Guide rules + RuboCop Rails checks + quick antipattern checklist |
+| [references/rails-advanced-patterns.md](references/rails-advanced-patterns.md) | Form objects, query objects, presenters/decorators, serializers, Sidekiq jobs, Pundit/CanCan policies |
+| [references/rspec-patterns.md](references/rspec-patterns.md) | 20 RSpec anti-patterns: `let!` overuse, over-mocking, brittle subjects, FactoryBot best practices, shared examples |
 | [references/js-ts-patterns.md](references/js-ts-patterns.md) | 17 JS/TS/React anti-patterns: classes, React hooks, control flow, utilities, code smells |
+| [references/nextjs-patterns.md](references/nextjs-patterns.md) | 20 Next.js App Router anti-patterns: `use client` overuse, server/client decision tree, caching strategy |
+| [references/nodejs-express-patterns.md](references/nodejs-express-patterns.md) | 20 Node.js/Express anti-patterns, middleware ordering guide, Fastify vs. Express matrix |
+| [references/jest-vitest-patterns.md](references/jest-vitest-patterns.md) | 20 Jest/Vitest anti-patterns + React Testing Library and MSW v2 best practices |
 | [references/python-patterns.md](references/python-patterns.md) | 20 Python/Django/FastAPI anti-patterns: classes, exceptions, types, async, Django, testing |
+| [references/python-advanced-patterns.md](references/python-advanced-patterns.md) | SQLAlchemy ORM, Flask, FastAPI dependency injection, Celery/async tasks, Pytest patterns |
 | [references/code-smells.md](references/code-smells.md) | Full Fowler smell taxonomy + Reek/Flog/RubyCritic metrics with Ruby/TS examples |
 | [references/yard-documentation.md](references/yard-documentation.md) | YARD tag reference, when to add/remove/update docs, good vs. bad YARD examples |
+| [references/logging-config-patterns.md](references/logging-config-patterns.md) | Logging/observability + configuration management anti-patterns across Ruby, Python, JS/TS |
 | [references/safety-checklist.md](references/safety-checklist.md) | Pre-refactor safety gates, risk matrix, YARD safety rules, post-refactor verification |
 | [references/tool-integration.md](references/tool-integration.md) | Full Phase 1 pipelines for Ruby/Rails, JS/TS, Python; Phase 2 safety verification |
 | [references/how-to-use.md](references/how-to-use.md) | User guide: common prompts, reading smell reports, approval workflow, before/after examples |
